@@ -45,6 +45,13 @@ public class LobbyService {
                     return room.getId();
                 })
                 .orElseThrow(RoomNotFoundException::new);
+    }
 
+    public List<WebSocketSession> getSessions(UUID id) {
+        return rooms.stream()
+                .filter(room -> room.getId().equals(id))
+                .findFirst()
+                .map(Room::getSessions)
+                .orElseThrow(RoomNotFoundException::new);
     }
 }
