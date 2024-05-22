@@ -1,9 +1,9 @@
-package pl.szymanski.wiktor.connect4websocket;
+package pl.szymanski.wiktor.connect4websocket.lobby;
 
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.WebSocketSession;
-import pl.szymanski.wiktor.connect4websocket.handler.RoomNotFoundException;
+import pl.szymanski.wiktor.connect4websocket.exceptions.RoomNotFoundException;
 
 import java.util.ArrayList;
 import java.util.List;

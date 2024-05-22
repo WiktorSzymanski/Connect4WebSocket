@@ -1,4 +1,4 @@
-package pl.szymanski.wiktor.connect4websocket;
+package pl.szymanski.wiktor.connect4websocket.lobby;
 
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;

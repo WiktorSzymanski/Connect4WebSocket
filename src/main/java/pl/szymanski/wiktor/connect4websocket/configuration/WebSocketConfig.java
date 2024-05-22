@@ -7,7 +7,7 @@ import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
-import pl.szymanski.wiktor.connect4websocket.LobbyService;
+import pl.szymanski.wiktor.connect4websocket.lobby.LobbyService;
 import pl.szymanski.wiktor.connect4websocket.handler.GameHandler;
 
 @Configuration

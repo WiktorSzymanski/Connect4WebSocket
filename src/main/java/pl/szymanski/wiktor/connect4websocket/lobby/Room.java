@@ -1,4 +1,4 @@
-package pl.szymanski.wiktor.connect4websocket;
+package pl.szymanski.wiktor.connect4websocket.lobby;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;

@@ -2,14 +2,12 @@ package pl.szymanski.wiktor.connect4websocket.handler;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
-import pl.szymanski.wiktor.connect4websocket.LobbyService;
+import pl.szymanski.wiktor.connect4websocket.lobby.LobbyService;
+import pl.szymanski.wiktor.connect4websocket.exceptions.InvalidRoomIdentifiedException;
 
 import java.net.URI;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 

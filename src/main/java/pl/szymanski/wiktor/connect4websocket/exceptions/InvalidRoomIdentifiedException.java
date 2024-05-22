@@ -1,6 +1,4 @@
-package pl.szymanski.wiktor.connect4websocket.handler;
-
-import java.security.InvalidKeyException;
+package pl.szymanski.wiktor.connect4websocket.exceptions;
 
 public class InvalidRoomIdentifiedException extends RuntimeException {
     public InvalidRoomIdentifiedException() {
