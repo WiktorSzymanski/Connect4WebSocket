@@ -41,8 +41,13 @@
 
 <script>
     const API_URL = 'http://localhost:8080/lobby';
-
+    let sessionId = sessionStorage.getItem("sessionId");
+    let roomId = sessionStorage.getItem("roomId");
     let socket = null;
+
+    if (sessionId && roomId) {
+        connectToRoom(roomId);
+    }
 
     async function getRooms() {
         const response = await fetch(API_URL);
@@ -78,27 +83,35 @@
     }
 
     function connectToRoom(roomId) {
-        socket = new WebSocket(`ws://localhost:8080/game/${roomId}`);
+        if (sessionId)
+            socket = new WebSocket(`ws://localhost:8080/game/${roomId}/${sessionId}`);
+        else
+            socket = new WebSocket(`ws://localhost:8080/game/${roomId}`);
 
         socket.onopen = () => {
             console.log('Connected to room:', roomId);
             document.getElementById("lobby").style.display="none";
             document.getElementById("boardDiv").style.display="block";
+            sessionStorage.setItem("roomId", roomId);
             drawBoard();
+            canvas.addEventListener('click', (evt) => {
+                const pos = getMousePos(canvas, evt);
+                const col = Math.floor(pos.x / CELL_SIZE);
+                socket.send(col);
+            });
         };
 
         socket.onmessage = (event) => {
             console.log('Message from server:', event.data);
+            if (isNaN(event.data)) {
+                sessionStorage.setItem("sessionId", event.data);
+                return;
+            }
             let resp = parseInt(event.data);
             if (resp >= 0 && resp <= 6)
                 placePiece(event.data);
             else if (resp === 7 || resp === 8) {
                 alert("Game started!\nYou are Player " + (resp - 6));
-                canvas.addEventListener('click', (evt) => {
-                    const pos = getMousePos(canvas, evt);
-                    const col = Math.floor(pos.x / CELL_SIZE);
-                    socket.send(col);
-                });
             }
             else if (resp === 9)
                 alert("Not your time to move!")
@@ -106,6 +119,7 @@
                 alert("Column is full!")
             else if (resp === 11 || resp === 12) {
                 alert("Player " + (resp - 10) + " won!");
+                sessionStorage.clear();
                 canvas.removeEventListener('click', (evt) => {
                     const pos = getMousePos(canvas, evt);
                     const col = Math.floor(pos.x / CELL_SIZE);

@@ -1,15 +1,20 @@
 package pl.szymanski.wiktor.connect4websocket.Game;
 
+import kotlin.Pair;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import pl.szymanski.wiktor.connect4websocket.exceptions.ColumnFullException;
 import pl.szymanski.wiktor.connect4websocket.exceptions.NotYourMoveException;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
-
-import static java.util.Collections.fill;
+import java.util.Stack;
 
 @Slf4j
 public class GameState {
+    @Getter
+    private final Stack<Pair<Integer, Integer>> moveHistory = new Stack<>();
     private final Integer[][] gameBoard = new Integer[7][6];
     private int currentMovePlayerIndex;
 
@@ -60,6 +65,7 @@ public class GameState {
                 gameBoard[col][row] = playerIndex;
 
                 log.info("Player {} placed his token in position col {} row {}", playerIndex, col, row);
+                moveHistory.add(new Pair<>(currentMovePlayerIndex, col));
                 boolean won = checkWinCondition(currentMovePlayerIndex, col, row);
                 log.info("Player {} won {}", playerIndex, won);
                 if (won) return playerIndex;

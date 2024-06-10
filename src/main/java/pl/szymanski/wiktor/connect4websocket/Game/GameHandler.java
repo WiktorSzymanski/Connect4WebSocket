@@ -26,19 +26,27 @@ public class GameHandler implements WebSocketHandler {
     }
 
     @Override
-    public void afterConnectionEstablished(@NotNull WebSocketSession session) {
-        UUID roomId = Stream.of(session)
+    public void afterConnectionEstablished(@NotNull WebSocketSession session) throws IOException {
+        List<String> splitedURI = Arrays.stream(Stream.of(session)
                 .map(WebSocketSession::getUri)
                 .filter(Objects::nonNull)
                 .map(URI::getPath)
-                .map(path -> path.split("/")[2])
+                .map(path -> path.split("/"))
+                .findAny()
+                .orElseThrow(RuntimeException::new))
+                .toList();
+
+        Optional<String> oldSessionId = splitedURI.size() < 4 ? Optional.empty() : Optional.of(splitedURI.get(3));
+
+        UUID roomId = Stream.of(splitedURI.get(2))
                 .map(UUID::fromString)
-                .map(id -> lobbyService.joinRoom(id, session))
+                .map(id -> lobbyService.joinRoom(id, session, oldSessionId))
                 .findAny()
                 .orElseThrow(InvalidRoomIdentifiedException::new);
 
         rooms.put(session, lobbyService.getRoomById(roomId));
         log.info("Connection established with room: {}", roomId);
+        session.sendMessage(new TextMessage(session.getId()));
     }
 
     @Override

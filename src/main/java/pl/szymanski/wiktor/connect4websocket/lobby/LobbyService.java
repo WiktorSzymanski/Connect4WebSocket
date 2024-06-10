@@ -11,6 +11,7 @@ import pl.szymanski.wiktor.connect4websocket.exceptions.RoomNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -43,11 +44,23 @@ public class LobbyService {
         return room;
     }
 
-    public UUID joinRoom(UUID id, WebSocketSession session) {
+    public UUID joinRoom(UUID id, WebSocketSession session, Optional<String> oldSessionId) {
         return rooms.stream()
-                .filter(Room::getOpen)
                 .filter(room -> room.getId().equals(id))
                 .findFirst()
+                .map(room -> {
+                    if (oldSessionId.isPresent()) {
+                        for (WebSocketSession s : room.getSessions()) {
+                            if (s.getId().equals(oldSessionId.get())) {
+                                room.getSessions().remove(s);
+                                room.setOpen(true);
+                                break;
+                            }
+                        }
+                    }
+                    return room;
+                })
+                .filter(Room::getOpen)
                 .map(room -> {
                     room.getSessions().add(session);
                     if (room.getSessions().size() == 2) {
@@ -61,6 +74,13 @@ public class LobbyService {
                             }
                             a++;
                         }
+                        room.getGameState().getMoveHistory().forEach(moveHistory -> {
+                            try {
+                                session.sendMessage(new TextMessage(moveHistory.getSecond().toString()));
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
                     }
                     return room.getId();
                 })

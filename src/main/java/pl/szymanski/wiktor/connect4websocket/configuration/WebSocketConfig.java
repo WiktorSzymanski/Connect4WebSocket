@@ -19,6 +19,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(gameHandler(), "/game/{id}").setAllowedOrigins("*");
+        registry.addHandler(gameHandler(), "/game/{id}/{roomId}").setAllowedOrigins("*");
     }
 
     @Bean
