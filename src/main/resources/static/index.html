@@ -89,7 +89,30 @@
 
         socket.onmessage = (event) => {
             console.log('Message from server:', event.data);
-            placePiece(event.data);
+            let resp = parseInt(event.data);
+            if (resp >= 0 && resp <= 6)
+                placePiece(event.data);
+            else if (resp === 7 || resp === 8) {
+                alert("Game started!\nYou are Player " + (resp - 6));
+                canvas.addEventListener('click', (evt) => {
+                    const pos = getMousePos(canvas, evt);
+                    const col = Math.floor(pos.x / CELL_SIZE);
+                    socket.send(col);
+                });
+            }
+            else if (resp === 9)
+                alert("Not your time to move!")
+            else if (resp === 10)
+                alert("Column is full!")
+            else if (resp === 11 || resp === 12) {
+                alert("Player " + (resp - 10) + " won!");
+                canvas.removeEventListener('click', (evt) => {
+                    const pos = getMousePos(canvas, evt);
+                    const col = Math.floor(pos.x / CELL_SIZE);
+                    socket.send(col);
+                });
+            }
+
         };
 
         socket.onclose = () => {
@@ -115,14 +138,13 @@
 
     function drawBoard() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        ctx.rect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'blue';
+        ctx.fill();
+        ctx.stroke();
         for (let r = 0; r < ROWS; r++) {
             for (let c = 0; c < COLS; c++) {
-                ctx.beginPath();
-                ctx.rect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-                ctx.fillStyle = 'blue';
-                ctx.fill();
-                ctx.stroke();
-
                 ctx.beginPath();
                 ctx.arc(
                     c * CELL_SIZE + CELL_SIZE / 2,
@@ -150,56 +172,12 @@
         for (let r = ROWS - 1; r >= 0; r--) {
             if (board[r][col] === 0) {
                 board[r][col] = currentPlayer;
-                if (checkWin(r, col)) {
-                    alert(`Player ${currentPlayer} wins!`);
-                    resetGame();
-                } else {
-                    currentPlayer = currentPlayer === 1 ? 2 : 1;
-                }
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
                 drawBoard();
                 return;
             }
         }
     }
-
-    function checkWin(row, col) {
-        return checkDirection(row, col, 1, 0) ||
-            checkDirection(row, col, 0, 1) ||
-            checkDirection(row, col, 1, 1) ||
-            checkDirection(row, col, 1, -1);
-    }
-
-    function checkDirection(row, col, rowDelta, colDelta) {
-        let count = 0;
-        for (let i = -3; i <= 3; i++) {
-            const r = row + i * rowDelta;
-            const c = col + i * colDelta;
-            if (r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c] === currentPlayer) {
-                count++;
-                if (count === 4) return true;
-            } else {
-                count = 0;
-            }
-        }
-        return false;
-    }
-
-    function resetGame() {
-        for (let r = 0; r < ROWS; r++) {
-            for (let c = 0; c < COLS; c++) {
-                board[r][c] = 0;
-            }
-        }
-        currentPlayer = 1;
-        drawBoard();
-    }
-
-    canvas.addEventListener('click', (evt) => {
-        const pos = getMousePos(canvas, evt);
-        const col = Math.floor(pos.x / CELL_SIZE);
-        socket.send(col);
-        // placePiece(col);
-    });
 </script>
 </body>
 </html>

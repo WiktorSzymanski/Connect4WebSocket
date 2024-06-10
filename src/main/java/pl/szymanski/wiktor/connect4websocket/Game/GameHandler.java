@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.web.socket.*;
+import pl.szymanski.wiktor.connect4websocket.exceptions.ColumnFullException;
+import pl.szymanski.wiktor.connect4websocket.exceptions.NotYourMoveException;
 import pl.szymanski.wiktor.connect4websocket.lobby.LobbyService;
 import pl.szymanski.wiktor.connect4websocket.exceptions.InvalidRoomIdentifiedException;
 import pl.szymanski.wiktor.connect4websocket.lobby.Room;
@@ -45,10 +47,16 @@ public class GameHandler implements WebSocketHandler {
         log.info("Message: {}", col);
         Room room = rooms.get(session);
 
+        int resp;
         try {
-            room.getGameState().placeToken(col, room.getSessions().indexOf(session));
-        } catch (Exception e) {
-            session.sendMessage(new TextMessage("Invalid move!"));
+            resp = room.getGameState().placeToken(col, room.getSessions().indexOf(session));
+        } catch (NotYourMoveException e) {
+            session.sendMessage(new TextMessage("9"));
+            log.error("Error:", e);
+            return;
+        } catch (ColumnFullException e) {
+            session.sendMessage(new TextMessage("10"));
+            log.error("Error:", e);
             return;
         }
 
@@ -59,6 +67,18 @@ public class GameHandler implements WebSocketHandler {
                 throw new RuntimeException(e);
             }
         });
+
+        if (resp != -1) {
+            int response = 11 + resp;
+            room.getSessions().forEach(s -> {
+                try {
+                    s.sendMessage(new TextMessage(Integer.toString(response)));
+                    s.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
     }
 
     @Override

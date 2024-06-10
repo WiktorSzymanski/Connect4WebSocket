@@ -3,10 +3,12 @@ package pl.szymanski.wiktor.connect4websocket.lobby;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import pl.szymanski.wiktor.connect4websocket.Game.GameState;
 import pl.szymanski.wiktor.connect4websocket.exceptions.RoomNotFoundException;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -50,6 +52,15 @@ public class LobbyService {
                     room.getSessions().add(session);
                     if (room.getSessions().size() == 2) {
                         room.setOpen(false);
+                        int a = 0;
+                        for (WebSocketSession s : room.getSessions()) {
+                            try {
+                                s.sendMessage(new TextMessage(String.valueOf(7 + a)));
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                            a++;
+                        }
                     }
                     return room.getId();
                 })

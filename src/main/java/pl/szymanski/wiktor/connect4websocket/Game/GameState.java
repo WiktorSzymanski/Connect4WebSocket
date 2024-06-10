@@ -31,7 +31,7 @@ public class GameState {
         for (int i = 0; i < 4; i++) {
             int newRow = row + i * dRow;
             int newCol = col + i * dCol;
-            if (newRow < 0 || newRow >= gameBoard.length || newCol < 0 || newCol >= gameBoard[0].length || !Objects.equals(gameBoard[newRow][newCol], token)) {
+            if (newRow < 0 || newRow >= gameBoard[0].length || newCol < 0 || newCol >= gameBoard.length || !Objects.equals(gameBoard[newCol][newRow], token)) {
                 break;
             }
             count++;
@@ -41,7 +41,7 @@ public class GameState {
         for (int i = 1; i < 4; i++) {
             int newRow = row - i * dRow;
             int newCol = col - i * dCol;
-            if (newRow < 0 || newRow >= gameBoard.length || newCol < 0 || newCol >= gameBoard[0].length || !Objects.equals(gameBoard[newRow][newCol], token)) {
+            if (newRow < 0 || newRow >= gameBoard[0].length || newCol < 0 || newCol >= gameBoard.length || !Objects.equals(gameBoard[newCol][newRow], token)) {
                 break;
             }
             count++;
@@ -50,20 +50,21 @@ public class GameState {
         return count >= 4;
     }
 
-    public void placeToken(int col, int playerIndex) {
+    public int placeToken(int col, int playerIndex) {
         if (playerIndex != currentMovePlayerIndex) {
             throw new NotYourMoveException();
         }
 
-        for (int row = 0; row < 7; row++) {
+        for (int row = 0; row < 6; row++) {
             if (gameBoard[col][row] == null) {
                 gameBoard[col][row] = playerIndex;
 
                 log.info("Player {} placed his token in position col {} row {}", playerIndex, col, row);
                 boolean won = checkWinCondition(currentMovePlayerIndex, col, row);
                 log.info("Player {} won {}", playerIndex, won);
+                if (won) return playerIndex;
                 currentMovePlayerIndex = (currentMovePlayerIndex + 1) % 2;
-                return;
+                return -1;
             }
         }
         throw new ColumnFullException();
