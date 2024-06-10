@@ -19,7 +19,7 @@ public class LobbyController {
     }
 
     @PostMapping()
-    public ResponseEntity<UUID> createRoom(@RequestBody String name) {
+    public ResponseEntity<Room> createRoom(@RequestBody String name) {
         return ResponseEntity.ok(lobbyService.createRoom(name));
     }
 }

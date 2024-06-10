@@ -1,4 +1,4 @@
-package pl.szymanski.wiktor.connect4websocket.handler;
+package pl.szymanski.wiktor.connect4websocket.Game;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -6,18 +6,22 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.web.socket.*;
 import pl.szymanski.wiktor.connect4websocket.lobby.LobbyService;
 import pl.szymanski.wiktor.connect4websocket.exceptions.InvalidRoomIdentifiedException;
+import pl.szymanski.wiktor.connect4websocket.lobby.Room;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Stream;
 
 @Slf4j
-@AllArgsConstructor
 public class GameHandler implements WebSocketHandler {
     private final LobbyService lobbyService;
+
+    private final Map<WebSocketSession, Room> rooms = new HashMap<>();
+
+    public GameHandler(LobbyService lobbyService) {
+        this.lobbyService = lobbyService;
+    }
 
     @Override
     public void afterConnectionEstablished(@NotNull WebSocketSession session) {
@@ -31,26 +35,26 @@ public class GameHandler implements WebSocketHandler {
                 .findAny()
                 .orElseThrow(InvalidRoomIdentifiedException::new);
 
+        rooms.put(session, lobbyService.getRoomById(roomId));
         log.info("Connection established with room: {}", roomId);
     }
 
     @Override
-    public void handleMessage(@NotNull WebSocketSession session, WebSocketMessage<?> message) throws Exception {
-        String tutorial = (String) message.getPayload();
-        log.info("Message: {}", tutorial);
-        List<WebSocketSession> sessions = lobbyService.getSessions(
-                Stream.of(session)
-                        .map(WebSocketSession::getUri)
-                        .filter(Objects::nonNull)
-                        .map(URI::getPath)
-                        .map(path -> path.split("/")[2])
-                        .map(UUID::fromString)
-                        .findAny()
-                        .orElseThrow(InvalidRoomIdentifiedException::new));
+    public void handleMessage(@NotNull WebSocketSession session, WebSocketMessage<?> message) throws IOException {
+        int col = Integer.parseInt((String) message.getPayload());
+        log.info("Message: {}", col);
+        Room room = rooms.get(session);
 
-        sessions.forEach(s -> {
+        try {
+            room.getGameState().placeToken(col, room.getSessions().indexOf(session));
+        } catch (Exception e) {
+            session.sendMessage(new TextMessage("Invalid move!"));
+            return;
+        }
+
+        room.getSessions().forEach(s -> {
             try {
-                s.sendMessage(new TextMessage("Someone sent: " + tutorial));
+                s.sendMessage(new TextMessage(Integer.toString(col)));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

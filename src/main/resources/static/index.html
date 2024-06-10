@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect4 Lobby</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .room {
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid black;
+            display: inline-block;
+            cursor: pointer;
+        }
+        #createRoom {
+            margin-top: 20px;
+        }
+        canvas {
+            border: 2px solid black;
+            display: block;
+            margin: 20px auto;
+        }
+        h1 {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div id="lobby">
+    <h1>Connect4 Lobby</h1>
+    <div id="rooms"></div>
+    <button id="createRoom">Create Room</button>
+</div>
+<div id="boardDiv" style="display: none">
+    <canvas id="board" width="700" height="600"></canvas>
+</div>
+
+<script>
+    const API_URL = 'http://localhost:8080/lobby';
+
+    let socket = null;
+
+    async function getRooms() {
+        const response = await fetch(API_URL);
+        const rooms = await response.json();
+        displayRooms(rooms);
+    }
+
+    async function createRoom() {
+        var roomName = prompt('Enter room name:');
+        if (roomName) {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(roomName)
+            });
+            const room = await response.json();
+            connectToRoom(room.id);
+        }
+    }
+
+    function displayRooms(rooms) {
+        const roomsDiv = document.getElementById('rooms');
+        roomsDiv.innerHTML = '';
+        rooms.forEach(room => {
+            const roomDiv = document.createElement('div');
+            roomDiv.className = 'room';
+            roomDiv.innerText = room.name;
+            roomDiv.onclick = () => connectToRoom(room.id);
+            roomsDiv.appendChild(roomDiv);
+        });
+    }
+
+    function connectToRoom(roomId) {
+        socket = new WebSocket(`ws://localhost:8080/game/${roomId}`);
+
+        socket.onopen = () => {
+            console.log('Connected to room:', roomId);
+            document.getElementById("lobby").style.display="none";
+            document.getElementById("boardDiv").style.display="block";
+            drawBoard();
+        };
+
+        socket.onmessage = (event) => {
+            console.log('Message from server:', event.data);
+            placePiece(event.data);
+        };
+
+        socket.onclose = () => {
+            console.log('Disconnected from room:', roomId);
+        };
+
+        socket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+    }
+
+    document.getElementById('createRoom').addEventListener('click', createRoom);
+
+    getRooms();
+
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    const COLS = 7;
+    const ROWS = 6;
+    const CELL_SIZE = 100;
+    const board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+    let currentPlayer = 1;
+
+    function drawBoard() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                ctx.beginPath();
+                ctx.rect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                ctx.fillStyle = 'blue';
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(
+                    c * CELL_SIZE + CELL_SIZE / 2,
+                    r * CELL_SIZE + CELL_SIZE / 2,
+                    CELL_SIZE / 2 - 5,
+                    0,
+                    2 * Math.PI
+                );
+                ctx.fillStyle = board[r][c] === 1 ? 'red' : board[r][c] === 2 ? 'yellow' : 'white';
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+    }
+
+    function getMousePos(canvas, evt) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: evt.clientX - rect.left,
+            y: evt.clientY - rect.top
+        };
+    }
+
+    function placePiece(col) {
+        for (let r = ROWS - 1; r >= 0; r--) {
+            if (board[r][col] === 0) {
+                board[r][col] = currentPlayer;
+                if (checkWin(r, col)) {
+                    alert(`Player ${currentPlayer} wins!`);
+                    resetGame();
+                } else {
+                    currentPlayer = currentPlayer === 1 ? 2 : 1;
+                }
+                drawBoard();
+                return;
+            }
+        }
+    }
+
+    function checkWin(row, col) {
+        return checkDirection(row, col, 1, 0) ||
+            checkDirection(row, col, 0, 1) ||
+            checkDirection(row, col, 1, 1) ||
+            checkDirection(row, col, 1, -1);
+    }
+
+    function checkDirection(row, col, rowDelta, colDelta) {
+        let count = 0;
+        for (let i = -3; i <= 3; i++) {
+            const r = row + i * rowDelta;
+            const c = col + i * colDelta;
+            if (r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c] === currentPlayer) {
+                count++;
+                if (count === 4) return true;
+            } else {
+                count = 0;
+            }
+        }
+        return false;
+    }
+
+    function resetGame() {
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                board[r][c] = 0;
+            }
+        }
+        currentPlayer = 1;
+        drawBoard();
+    }
+
+    canvas.addEventListener('click', (evt) => {
+        const pos = getMousePos(canvas, evt);
+        const col = Math.floor(pos.x / CELL_SIZE);
+        socket.send(col);
+        // placePiece(col);
+    });
+</script>
+</body>
+</html>

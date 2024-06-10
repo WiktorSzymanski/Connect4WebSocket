@@ -1,8 +1,10 @@
 package pl.szymanski.wiktor.connect4websocket.lobby;
 
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.WebSocketSession;
+import pl.szymanski.wiktor.connect4websocket.Game.GameState;
 import pl.szymanski.wiktor.connect4websocket.exceptions.RoomNotFoundException;
 
 import java.util.ArrayList;
@@ -26,10 +28,17 @@ public class LobbyService {
                 .collect(Collectors.toList());
     }
 
-    public UUID createRoom(String name) {
-        Room room = new Room(UUID.randomUUID(), name, true, new ArrayList<>());
+    public Room getRoomById(UUID roomId) {
+        return rooms.stream()
+                .filter(room -> room.getId().equals(roomId))
+                .findFirst()
+                .orElseThrow(RoomNotFoundException::new);
+    }
+
+    public Room createRoom(String name) {
+        Room room = new Room(UUID.randomUUID(), name.substring(1, name.length() - 1), true, new ArrayList<>(), new GameState());
         rooms.add(room);
-        return room.getId();
+        return room;
     }
 
     public UUID joinRoom(UUID id, WebSocketSession session) {
